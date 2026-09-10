@@ -1,0 +1,346 @@
+import { Buffer } from 'node:buffer';
+import File from 'vinyl';
+import { XMLSerializer } from '@xmldom/xmldom';
+import SVGShape from '../../../lib/core/shape.js';
+
+const TEST_SPRITER = {
+  config: {
+    shape: {
+      meta: {},
+      align: {}
+    },
+    svg: {
+      doctypeDeclaration: ''
+    }
+  },
+  verbose: vi.fn()
+};
+const TEST_FILE = new File({
+  contents: Buffer.from('<svg></svg>'),
+  path: '/test_base/test_path',
+  base: '/test_base/',
+  cwd: '/'
+});
+
+describe('testing getSVG()', () => {
+  it('should clone node if shape is not master', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    shape.master = false;
+    vi.spyOn(shape.dom.documentElement, 'cloneNode');
+
+    shape.getSVG();
+
+    expect(shape.dom.documentElement.cloneNode).toHaveBeenCalledWith(true);
+  });
+
+  it('should wrap node if shape is master', () => {
+    expect.hasAssertions();
+
+    const TEST_ID = 'TEST_ID';
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    shape.master = {
+      id: TEST_ID
+    };
+    const TEST_SVG = {
+      setAttribute: vi.fn()
+    };
+    // @xmldom/xmldom 0.9 validates what it serializes, so this has to be a
+    // real node rather than the empty string 0.8 tolerated
+    vi.spyOn(shape, '_stripInlineNamespaceDeclarations').mockReturnValueOnce(shape.dom.documentElement);
+    vi.spyOn(shape.dom, 'createElementNS').mockReturnValueOnce(TEST_SVG);
+
+    shape.getSVG();
+
+    expect(shape.dom.createElementNS).toHaveBeenCalledWith('http://www.w3.org/2000/svg', 'use');
+    expect(TEST_SVG.setAttribute).toHaveBeenCalledWith('xlink:href', `#${TEST_ID}`);
+  });
+
+  it('should return serialized string with declarations if inline is true', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_NODE = shape.dom.documentElement;
+    vi.spyOn(shape, '_stripInlineNamespaceDeclarations').mockReturnValueOnce(TEST_NODE);
+
+    expect(shape.getSVG(true)).toBe(new XMLSerializer().serializeToString(TEST_NODE));
+  });
+
+  it('should call transform if it is a function', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const testFn = vi.fn();
+
+    shape.getSVG(false, testFn);
+
+    expect(testFn).toHaveBeenCalledWith(expect.any(Object));
+  });
+
+  it('should return serialized xml if inline is true', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_NODE = shape.dom.documentElement;
+    vi.spyOn(shape, '_stripInlineNamespaceDeclarations').mockReturnValueOnce(TEST_NODE);
+
+    expect(shape.getSVG(true)).toBe(new XMLSerializer().serializeToString(TEST_NODE));
+  });
+
+  it('should return serialized xml if shape is master', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    shape.master = {
+      id: 2
+    };
+    const TEST_NODE = shape.dom.documentElement;
+    vi.spyOn(shape, '_stripInlineNamespaceDeclarations').mockReturnValueOnce(TEST_NODE);
+
+    expect(shape.getSVG(false)).toBe(new XMLSerializer().serializeToString(TEST_NODE));
+  });
+
+  it('should add declarations if provided', () => {
+    expect.hasAssertions();
+
+    const TEST_XML_DECLARATION = 'TEST XML DECLARATION';
+    const TEST_DOCTYPE_DECLARATION = 'TEST DOCTYPE DECLARATION';
+    const shape = new SVGShape(TEST_FILE, {
+      config: {
+        shape: {
+          meta: {},
+          align: {}
+        },
+        svg: {
+          doctypeDeclaration: true,
+          xmlDeclaration: true
+        }
+      },
+      verbose: vi.fn()
+    });
+    shape.doctypeDeclaration = TEST_DOCTYPE_DECLARATION;
+    shape.xmlDeclaration = TEST_XML_DECLARATION;
+
+    expect(shape.getSVG()).toContain(TEST_DOCTYPE_DECLARATION);
+    expect(shape.getSVG()).toContain(TEST_XML_DECLARATION);
+  });
+
+  it('should substitute ID references in href attributes', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(new File({
+      base: TEST_FILE.base,
+      path: TEST_FILE.path,
+      cwd: TEST_FILE.cwd,
+      contents: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" id="abc" height="0" width="0"><use href="#abc"/></svg>')
+    }), {
+      config: {
+        shape: {
+          meta: {},
+          align: {}
+        },
+        svg: {
+          doctypeDeclaration: '',
+          namespaceIDPrefix: 'someprefix-',
+          namespaceClassnames: false,
+          namespaceIDs: true
+        },
+        mode: {
+          view: true
+        }
+      },
+      verbose: vi.fn()
+    });
+    shape.complement(vi.fn);
+    shape.setNamespace('ns-');
+
+    expect(shape.getSVG()).toBe('<svg xmlns="http://www.w3.org/2000/svg" id="someprefix-ns-abc" height="0" width="0" viewBox="0 0 0 0"><use href="#someprefix-ns-abc"/></svg>');
+  });
+
+  it('should substitute ID references in xlink:href attributes', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(new File({
+      base: TEST_FILE.base,
+      path: TEST_FILE.path,
+      cwd: TEST_FILE.cwd,
+      contents: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="abc" height="0" width="0"><use xlink:href="#abc"/></svg>')
+    }), {
+      config: {
+        shape: {
+          meta: {},
+          align: {}
+        },
+        svg: {
+          doctypeDeclaration: '',
+          namespaceIDPrefix: 'someprefix-',
+          namespaceClassnames: false,
+          namespaceIDs: true
+        },
+        mode: {
+          view: true
+        }
+      },
+      verbose: vi.fn()
+    });
+    shape.complement(vi.fn);
+    shape.setNamespace('ns-');
+
+    expect(shape.getSVG()).toBe('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="someprefix-ns-abc" height="0" width="0" viewBox="0 0 0 0"><use xlink:href="#someprefix-ns-abc"/></svg>');
+  });
+});
+
+describe('testing _stripInlineNamespaceDeclarations()', () => {
+  it('should deal with nsMap if passed', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_ELEMENT = {
+      childNodes: []
+    };
+    const testFn = vi.fn().mockReturnValue(false);
+    const MOCK_NS_MAP = {
+      '': {},
+      xlink: {}
+    };
+
+    Object.defineProperty(MOCK_NS_MAP, '', {
+      get: testFn
+    });
+    Object.defineProperty(MOCK_NS_MAP, 'xlink', {
+      get: testFn
+    });
+
+    shape._stripInlineNamespaceDeclarations(TEST_ELEMENT, MOCK_NS_MAP);
+
+    expect(testFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('should remove xmlns if it exists', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_ELEMENT = {
+      attributes: {
+        getNamedItem: vi.fn().mockReturnValueOnce({ value: shape.DEFAULT_SVG_NAMESPACE }),
+        removeNamedItem: vi.fn()
+      },
+      childNodes: []
+    };
+
+    expect(shape._stripInlineNamespaceDeclarations(TEST_ELEMENT)).toBe(TEST_ELEMENT);
+    expect(TEST_ELEMENT.attributes.getNamedItem).toHaveBeenCalledWith('xmlns');
+    expect(TEST_ELEMENT.attributes.removeNamedItem).toHaveBeenCalledWith('xmlns');
+  });
+
+  it('should remove xmlns:xlink if it not exists in nsMap', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_ELEMENT = {
+      attributes: {
+        getNamedItem: vi.fn().mockReturnValueOnce({ value: shape.XLINK_NAMESPACE }),
+        removeNamedItem: vi.fn()
+      },
+      childNodes: []
+    };
+
+    expect(shape._stripInlineNamespaceDeclarations(TEST_ELEMENT, {})).toBe(TEST_ELEMENT);
+    expect(TEST_ELEMENT.attributes.getNamedItem).toHaveBeenCalledWith('xmlns:xlink');
+    expect(TEST_ELEMENT.attributes.removeNamedItem).toHaveBeenCalledWith('xmlns:xlink');
+  });
+
+  it('should remove xmlns:xlink if it exists in nsMap', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_ELEMENT = {
+      attributes: {
+        getNamedItem: vi.fn().mockReturnValueOnce({ value: shape.XLINK_NAMESPACE }),
+        removeNamedItem: vi.fn()
+      },
+      childNodes: []
+    };
+
+    expect(shape._stripInlineNamespaceDeclarations(TEST_ELEMENT, { xlink: shape.XLINK_NAMESPACE })).toBe(TEST_ELEMENT);
+    expect(TEST_ELEMENT.attributes.getNamedItem).toHaveBeenCalledWith('xmlns:xlink');
+    expect(TEST_ELEMENT.attributes.removeNamedItem).toHaveBeenCalledWith('xmlns:xlink');
+  });
+
+  it('should call _stripInlineNamespaceDeclarations() for each child element', () => {
+    expect.hasAssertions();
+
+    let isMethodMocked = false;
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_CHILD_1 = { nodeType: 1 };
+    const TEST_CHILD_2 = { nodeType: 1 };
+    const TEST_CHILD_3 = { nodeType: 666 };
+    const TEST_ELEMENT = {
+      _nsMap: { TEST_NS_MAP: true },
+      attributes: {
+        getNamedItem: vi.fn().mockReturnValueOnce({ value: shape.XLINK_NAMESPACE }),
+        removeNamedItem: vi.fn()
+      },
+      childNodes: {
+        0: TEST_CHILD_1,
+        1: TEST_CHILD_2,
+        2: TEST_CHILD_3,
+        length: 3,
+        item(i) {
+          if (!isMethodMocked) {
+            isMethodMocked = true; // mocking the other calls
+            vi.spyOn(shape, '_stripInlineNamespaceDeclarations').mockImplementation(() => {});
+          }
+
+          return this[i];
+        }
+      }
+    };
+
+    shape._stripInlineNamespaceDeclarations(TEST_ELEMENT, false);
+
+    expect(shape._stripInlineNamespaceDeclarations).toHaveBeenCalledTimes(2);
+    expect(shape._stripInlineNamespaceDeclarations.mock.calls[0][0]).toStrictEqual(TEST_CHILD_1);
+    expect(shape._stripInlineNamespaceDeclarations.mock.calls[0][1]).toStrictEqual(expect.objectContaining(TEST_ELEMENT._nsMap));
+    expect(shape._stripInlineNamespaceDeclarations.mock.calls[1][0]).toStrictEqual(TEST_CHILD_1);
+    expect(shape._stripInlineNamespaceDeclarations.mock.calls[1][1]).toStrictEqual(expect.objectContaining(TEST_ELEMENT._nsMap));
+  });
+});
+
+describe('testing setSVG()', () => {
+  it('should set attributes to svg and call _initSVG()', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+    const TEST_SVG = 'TEST_svg';
+    const TEST_RESULT = { TEST: 'result' };
+
+    vi.spyOn(shape, '_initSVG').mockReturnValueOnce(TEST_RESULT);
+
+    expect(shape.setSVG(TEST_SVG)).toBe(TEST_RESULT);
+    expect(shape.svg.current).toBe(TEST_SVG);
+    expect(shape.svg.ready).toBeNull();
+    expect(shape._initSVG).toHaveBeenCalledWith();
+  });
+});
+
+describe('testing _round()', () => {
+  it('should return expected result', () => {
+    expect.hasAssertions();
+
+    const shape = new SVGShape(TEST_FILE, TEST_SPRITER);
+
+    shape._precision = 0.1;
+
+    expect(shape._round(99.99)).toBe(100);
+
+    shape._precision = 0.01;
+
+    expect(shape._round(90)).toBe(100);
+
+    shape._precision = 100;
+
+    expect(shape._round(99.9)).toBe(99.9);
+  });
+});

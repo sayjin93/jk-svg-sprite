@@ -1,0 +1,72 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  FORCE_COLOR: 2
+  NODE_COV: 20 # The Node.js version to run coveralls on
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node: [18, 20, 22]
+        include:
+          - os: macos-latest
+            node: 18
+          - os: windows-latest
+            node: 18
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run example
+        run: npm run example
+
+      - name: Run tests
+        run: npm test
+        if: "!(startsWith(matrix.os, 'ubuntu') && matrix.node == env.NODE_COV)"
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        if: startsWith(matrix.os, 'ubuntu') && matrix.node == env.NODE_COV
+
+      - name: Upload failed tests' screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: svg-sprite-ci-${{ matrix.node }}-${{ matrix.os }}-${{ github.sha }}
+          path: tmp/
+
+      - name: Run Coveralls
+        uses: coverallsapp/github-action@v2
+        if: startsWith(matrix.os, 'ubuntu') && matrix.node == env.NODE_COV
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"

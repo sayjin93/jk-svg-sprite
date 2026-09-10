@@ -1,0 +1,145 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { Buffer } from 'node:buffer';
+import * as yaml from 'js-yaml';
+import SVGSpriterConfig from '../../../lib/core/config.js';
+
+vi.mock('node:fs');
+vi.mock('js-yaml');
+
+describe('testing SVGSpriterConfig shape.meta', () => {
+  it('should copy fields from config.shape', () => {
+    expect.hasAssertions();
+
+    const TEST_SHAPE = { TEST_1: 1, TEST_2: 2 };
+    const config = new SVGSpriterConfig({ shape: TEST_SHAPE });
+
+    expect(config.shape).toStrictEqual(expect.objectContaining(TEST_SHAPE));
+  });
+
+  it('should set empty meta if shape is not passed', () => {
+    expect.hasAssertions();
+
+    const config = new SVGSpriterConfig({});
+
+    expect(config.shape.meta).toStrictEqual({});
+  });
+
+  it('should set empty meta if shape.meta is not passed', () => {
+    expect.hasAssertions();
+
+    const config = new SVGSpriterConfig({ shape: {} });
+
+    expect(config.shape.meta).toStrictEqual({});
+  });
+
+  it('should set empty meta if plain object is passed', () => {
+    expect.hasAssertions();
+
+    const config = new SVGSpriterConfig({ shapa: { meta: { TEST: 1 } } });
+
+    expect(config.shape.meta).toStrictEqual({});
+  });
+
+  it('should set empty meta if passed anything but string', () => {
+    expect.hasAssertions();
+
+    const config = new SVGSpriterConfig({ shape: { meta: true } });
+
+    expect(config.shape.meta).toStrictEqual({});
+  });
+
+  describe('if string passed', () => {
+    it('should check stat if passed path to the file', () => {
+      expect.hasAssertions();
+
+      vi.spyOn(fs, 'lstatSync');
+       
+      new SVGSpriterConfig({ shape: { meta: '.' } });
+
+      expect(fs.lstatSync).toHaveBeenCalledWith(path.resolve('.'));
+    });
+
+    it('should set empty object if stat is not a file', () => {
+      expect.hasAssertions();
+
+      vi.spyOn(fs, 'lstatSync').mockReturnValueOnce({
+        isSymbolicLink: vi.fn().mockReturnValueOnce(false),
+        isFile: vi.fn().mockReturnValueOnce(false)
+      });
+
+      const config = new SVGSpriterConfig({ shape: { meta: '.' } });
+
+      expect(config.shape.meta).toStrictEqual({});
+    });
+
+    it('should set object read from correct yaml if stat is a file', () => {
+      expect.hasAssertions();
+
+      const TEST_FILE_NAME = './TEST_FILE_NAME.svg';
+      const TEST_FILE_CONTENTS = Buffer.from('some kind of file');
+      const TEST_META = {
+        [TEST_FILE_NAME]: {
+          title: 'test',
+          description: 'test'
+        }
+      };
+
+      vi.spyOn(fs, 'lstatSync').mockReturnValueOnce({
+        isSymbolicLink: vi.fn().mockReturnValueOnce(false),
+        isFile: vi.fn().mockReturnValueOnce(true)
+      });
+      vi.spyOn(fs, 'readFileSync').mockReturnValueOnce(TEST_FILE_CONTENTS);
+      vi.mocked(yaml.load).mockReturnValueOnce(TEST_META);
+
+      const config = new SVGSpriterConfig({ shape: { meta: '.' } });
+
+      expect(yaml.load).toHaveBeenCalledWith(TEST_FILE_CONTENTS);
+      expect(config.shape.meta).toStrictEqual({
+        [path.join(path.dirname(TEST_FILE_NAME), path.basename(TEST_FILE_NAME, '.svg'))]: TEST_META[TEST_FILE_NAME]
+      });
+    });
+
+    it('should set empty object if data from correct yaml contains non-object values and if stat is a file', () => {
+      expect.hasAssertions();
+
+      const TEST_FILE_NAME = './TEST_FILE_NAME.svg';
+      const TEST_FILE_CONTENTS = Buffer.from('some kind of file');
+      const TEST_META = {
+        [TEST_FILE_NAME]: false
+      };
+
+      vi.spyOn(fs, 'lstatSync').mockReturnValueOnce({
+        isSymbolicLink: vi.fn().mockReturnValueOnce(false),
+        isFile: vi.fn().mockReturnValueOnce(true)
+      });
+      vi.spyOn(fs, 'readFileSync').mockReturnValueOnce(TEST_FILE_CONTENTS);
+      vi.mocked(yaml.load).mockReturnValueOnce(TEST_META);
+
+      const config = new SVGSpriterConfig({ shape: { meta: '.' } });
+
+      expect(config.shape.meta).toStrictEqual({});
+    });
+
+    it('should follow symlink', () => {
+      expect.hasAssertions();
+
+      const TEST_DEST = '.';
+
+      vi.spyOn(fs, 'readlinkSync').mockReturnValueOnce(TEST_DEST);
+      vi.spyOn(fs, 'statSync').mockReturnValueOnce({
+        isFile: vi.fn().mockReturnValueOnce(false)
+      });
+
+      vi.spyOn(fs, 'lstatSync').mockReturnValueOnce({
+        isSymbolicLink: vi.fn().mockReturnValueOnce(true)
+      });
+
+       
+      new SVGSpriterConfig({ shape: { meta: '.' } });
+
+      expect(fs.readlinkSync).toHaveBeenCalledWith(path.resolve('.'));
+      expect(fs.statSync).toHaveBeenCalledWith(TEST_DEST);
+    });
+  });
+});
