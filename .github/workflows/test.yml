@@ -11,7 +11,6 @@ on:
 
 env:
   FORCE_COLOR: 2
-  NODE_COV: 20 # The Node.js version to run coveralls on
 
 permissions:
   contents: read
@@ -24,13 +23,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # The package requires Node >= 22; vitest itself needs >= 22.12.
         os: [ubuntu-latest]
-        node: [18, 20, 22]
+        node: [22, 24]
         include:
           - os: macos-latest
-            node: 18
+            node: 22
           - os: windows-latest
-            node: 18
+            node: 22
 
     steps:
       - name: Clone repository
@@ -47,26 +47,20 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      # The visual regression specs rasterise sprites in Chromium. npm does not
+      # run playwright's postinstall browser download, so fetch it explicitly.
+      - name: Install Chromium for visual regression tests
+        run: npx playwright install --with-deps chromium
+
       - name: Run example
         run: npm run example
 
       - name: Run tests
         run: npm test
-        if: "!(startsWith(matrix.os, 'ubuntu') && matrix.node == env.NODE_COV)"
-
-      - name: Run tests with coverage
-        run: npm run test:coverage
-        if: startsWith(matrix.os, 'ubuntu') && matrix.node == env.NODE_COV
 
       - name: Upload failed tests' screenshots
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: svg-sprite-ci-${{ matrix.node }}-${{ matrix.os }}-${{ github.sha }}
+          name: jk-svg-sprite-ci-${{ matrix.node }}-${{ matrix.os }}-${{ github.sha }}
           path: tmp/
-
-      - name: Run Coveralls
-        uses: coverallsapp/github-action@v2
-        if: startsWith(matrix.os, 'ubuntu') && matrix.node == env.NODE_COV
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"

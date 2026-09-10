@@ -3,7 +3,16 @@ import path from 'node:path';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 
+// Absolute floor for tiny canvases, plus a proportional allowance below.
 const MAX_MISMATCH = 5;
+
+// Rendered comparisons are inherently sensitive to the Chromium build doing the
+// rasterising: edge antialiasing shifts by a pixel here and there between
+// versions and platforms, which a fixed 5px budget cannot absorb on a
+// 1280x1024 canvas. A proportional budget scales with the canvas and still
+// fails loudly on real breakage - a dropped or misplaced shape differs by
+// thousands of pixels, three orders of magnitude above this.
+const MAX_MISMATCH_RATIO = 0.0005; // 0.05% of pixels
 
 /**
  * @param {PNG} diff        diff PNG
@@ -36,7 +45,9 @@ export default async(input, expected) => {
     { threshold: 0.1 }
   );
 
-  if (matched <= MAX_MISMATCH) {
+  const allowed = Math.max(MAX_MISMATCH, Math.round(width * height * MAX_MISMATCH_RATIO));
+
+  if (matched <= allowed) {
     return { isEqual: true, matched, diff };
   }
 
