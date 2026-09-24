@@ -386,6 +386,8 @@ Please refer to the [GitHub releases](https://github.com/sayjin93/jk-svg-sprite/
 
 ## Legal
 
+*jk-svg-sprite* is a fork of [svg-sprite](https://github.com/svg-sprite/svg-sprite) by Joschi Kuphal, and retains his copyright alongside its own.
+
 *jk-svg-sprite* is licensed under the terms of the [MIT license](LICENSE). The contained example SVG icons are part of the [Tango Icon Library](http://tango.freedesktop.org/Tango_Icon_Library) and belong to the Public Domain.
 
 

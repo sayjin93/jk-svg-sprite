@@ -1,4 +1,4 @@
-# svg-sprite
+# jk-svg-sprite
 
 This file is part of the documentation of *jk-svg-sprite* — a free low-level Node.js module that **takes a bunch of SVG files**, optimizes them and creates **SVG sprites** of several types. The package is [hosted on GitHub](https://github.com/sayjin93/jk-svg-sprite).
 
@@ -219,7 +219,7 @@ To use a custom callback for transforming a shape's SVG, pass a function with th
 }
 ```
 
-The transformation name (`"custom"` in this case) is of no significance. Please see `lib/svg-sprite/shape.js` to learn about what you can do with the shape object.
+The transformation name (`"custom"` in this case) is of no significance. Please see `lib/core/shape.js` to learn about what you can do with the shape object.
 
 
 #### Miscellaneous shape options

@@ -1,4 +1,4 @@
-# svg-sprite
+# jk-svg-sprite
 
 This file is part of the documentation of *jk-svg-sprite* — a free low-level Node.js module that **takes a bunch of SVG files**, optimizes them and creates **SVG sprites** of several types. The package is [hosted on GitHub](https://github.com/sayjin93/jk-svg-sprite).
 

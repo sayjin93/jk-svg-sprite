@@ -1,4 +1,4 @@
-# svg-sprite
+# jk-svg-sprite
 
 This file is part of the documentation of *jk-svg-sprite* — a free low-level Node.js module that **takes a bunch of SVG files**, optimizes them and creates **SVG sprites** of several types. The package is [hosted on GitHub](https://github.com/sayjin93/jk-svg-sprite).
 
@@ -144,7 +144,7 @@ There are a couple of functions directly built into *jk-svg-sprite*. You may use
 Takes no arguments and returns the current date and time as GMT string (e.g. *Mon, 22 Dec 2014 16:18:53 GMT*).
 
 ```mustache
-<p>Generated at {{date}} by svg-sprite</p>
+<p>Generated at {{date}} by jk-svg-sprite</p>
 ```
 
 #### invert

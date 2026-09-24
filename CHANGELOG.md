@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Changed
+
+* The bundled HTML example templates now identify the sprite as *jk-svg-sprite* and link to this
+  repository, rather than the upstream project.
+
+### Fixed
+
+* Corrected leftover *svg-sprite* naming in the documentation, including stale command line
+  examples and a broken `lib/svg-sprite/shape.js` path reference.
+* The README now credits [svg-sprite](https://github.com/svg-sprite/svg-sprite) as the project
+  this one was forked from.
+
 ## 1.0.1 — 2026-09-24
 
 ### Maintenance
