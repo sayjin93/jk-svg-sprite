@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.0.1 — 2026-09-24
+
+### Maintenance
+
+* This changelog is now included in the published package.
+* Updated dependencies: `js-yaml` 5.4.2, `yargs` 18.2.0.
+* Updated development dependencies: `eslint` 10.11.0, `vitest` and `@vitest/coverage-v8` 5.0.1,
+  `sass` 1.105.0.
+
 ## 1.0.0 — 2026-09-10
 
 Initial release.

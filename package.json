@@ -1,6 +1,6 @@
 {
   "name": "jk-svg-sprite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Takes a bunch of SVG files, optimizes them and bakes them into SVG sprites of several types, along with suitable stylesheet resources (CSS, Sass, LESS, Stylus).",
   "keywords": [
     "icon",
@@ -46,7 +46,8 @@
   "files": [
     "bin",
     "lib",
-    "tmpl"
+    "tmpl",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=22"
@@ -57,7 +58,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "fix": "eslint . --fix",
-    "example": "node example.js"
+    "example": "node example.js",
+    "prepublishOnly": "npm run lint && npm test"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
@@ -65,24 +67,24 @@
     "css-selector-parser": "^3.3.0",
     "csso": "^5.0.5",
     "cssom": "^0.5.0",
-    "js-yaml": "^5.4.1",
+    "js-yaml": "^5.4.2",
     "mustache": "^4.2.0",
     "svgo": "^4.1.0",
     "vinyl": "^3.0.1",
     "xpath": "^0.0.34",
-    "yargs": "^18.1.0"
+    "yargs": "^18.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^5.0.0",
-    "eslint": "^10.10.0",
+    "@vitest/coverage-v8": "^5.0.1",
+    "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "less": "^4.9.1",
     "pixelmatch": "^7.2.0",
     "playwright-chromium": "^1.63.0",
     "pngjs": "^7.0.0",
-    "sass": "^1.104.0",
+    "sass": "^1.105.0",
     "stylus": "^0.64.0",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.1"
   }
 }

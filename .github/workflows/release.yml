@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  FORCE_COLOR: 2
+  NODE: 22 # The Node.js version to publish from
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Create the GitHub release
+      id-token: write # Mint the OIDC token npm trusted publishing needs
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE }}
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing (OIDC, no token) requires npm 11.5.1 or newer,
+      # which is ahead of the npm bundled with Node 22.
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # The visual regression specs rasterise sprites in Chromium. npm does not
+      # run playwright's postinstall browser download, so fetch it explicitly.
+      - name: Install Chromium for visual regression tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Tag v$tag does not match package.json version $pkg"
+            exit 1
+          fi
+
+      # `prepublishOnly` runs lint and the full test suite as the release gate.
+      - name: Publish
+        run: npm publish
+
+      - name: Upload failed tests' screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: jk-svg-sprite-release-${{ github.sha }}
+          path: tmp/
+
+      - name: Extract release notes from the changelog
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v ver="$version" '
+            $0 ~ "^## " ver "( |$)" { flag = 1; next }
+            /^## / && flag { exit }
+            flag { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::No changelog section found for $version"
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "${GITHUB_REF_NAME#v}" \
+            --notes-file release-notes.md \
+            --repo "$GITHUB_REPOSITORY"
