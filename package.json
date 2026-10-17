@@ -1,6 +1,6 @@
 {
   "name": "jk-svg-sprite",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Takes a bunch of SVG files, optimizes them and bakes them into SVG sprites of several types, along with suitable stylesheet resources (CSS, Sass, LESS, Stylus).",
   "keywords": [
     "icon",
