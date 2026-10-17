@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## 1.0.2 — 2026-10-17
 
 ### Changed
 
@@ -15,6 +15,12 @@ All notable changes to this project are documented in this file.
   examples and a broken `lib/svg-sprite/shape.js` path reference.
 * The README now credits [svg-sprite](https://github.com/svg-sprite/svg-sprite) as the project
   this one was forked from.
+
+### Maintenance
+
+* Updated dependencies: `js-yaml` 5.5.0, `xpath` 0.0.35.
+* Updated development dependencies: `eslint` 10.13.0, `globals` 17.13.0, `vitest` and
+  `@vitest/coverage-v8` 5.0.5, `sass` 1.105.2, `playwright-chromium` 1.64.1, `pixelmatch` 8.0.0.
 
 ## 1.0.1 — 2026-09-24
 
