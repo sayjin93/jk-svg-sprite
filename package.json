@@ -71,7 +71,7 @@
     "mustache": "^4.2.0",
     "svgo": "^4.1.0",
     "vinyl": "^3.0.1",
-    "xpath": "^0.0.35",
+    "xpath": "^0.0.36",
     "yargs": "^18.2.0"
   },
   "devDependencies": {
