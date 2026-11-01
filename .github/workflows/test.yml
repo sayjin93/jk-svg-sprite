@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -59,7 +59,7 @@ jobs:
         run: npm test
 
       - name: Upload failed tests' screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: jk-svg-sprite-ci-${{ matrix.node }}-${{ matrix.os }}-${{ github.sha }}
